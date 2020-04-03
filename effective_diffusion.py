@@ -59,7 +59,7 @@ hydrogen = {
     }
 }
 
-def D_eff(gas, material, v_c, n_H, d):
+def D_eff(gas, material, v_c, n_H, d, max_dpa):
     material_symbol = material['symbol']
     gas_symbol = gas['symbol']
     D0 = gas['D0'][material_symbol]
@@ -75,6 +75,9 @@ def D_eff(gas, material, v_c, n_H, d):
 
     D_L = D0 * np.exp(-Ea / kB / Teq)
     dpa = n_H * d * R / n
+
+    if max_dpa:
+        dpa[dpa > max_dpa] = max_dpa
 
     print(f'D_L: {D_L}')
 
@@ -112,7 +115,7 @@ def main():
     #axis2 = axis1.twinx()
 
     for material in materials:
-        D, dpa = D_eff(hydrogen, material, v_c, n_H, d)
+        D, dpa = D_eff(hydrogen, material, v_c, n_H, d, max_dpa = 0.2)
         axis1.loglog(d/AU, D)
     axis1.loglog(d/AU, np.full(n_d, D_eff_sig), '--', color='black')
 
@@ -138,6 +141,7 @@ def main():
     plt.xlabel('dpa')
     plt.ylabel('D_eff [m2/s]')
     plt.savefig('D_eff_dpa.png')
+    axis2.set_xticks([1e-8, 1e-6, 1e-4, 0.005, 1e-2,  1e-1])
     plt.show()
 
 if __name__ == '__main__':
