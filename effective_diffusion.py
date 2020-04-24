@@ -19,7 +19,7 @@ tungsten = {
     'Z': 74,
     'R_v': {
         'H': {
-            0.2: 4e-5 * 1e10 #vac/meter-ion
+            0.2: 4e-5 * 1e10 #vac/meter-ion - from SRIM
         }
     }
 }
@@ -33,7 +33,7 @@ copper = {
     'Z': 29,
     'R_v': {
         'H': {
-            0.2: 5e-5 * 1e10 #vac/meter-ion
+            0.2: 5e-5 * 1e10 #vac/meter-ion - from SRIM
         }
     }
 }
@@ -105,43 +105,46 @@ def main():
     n_d = 10000
     d = np.logspace(-3, 3, n_d)*AU
     v_c = 0.2
+    v = v_c*c
     n_H_cm3 = 1.0
     n_H = n_H_cm3*1e6
     materials = [tungsten, copper]
+    gas = hydrogen
+    m = gas['m']
 
-    D_eff_sig = 1.59e-23
+    travel_time = 4.4*lyr/v
+
+    L_eff_sig_micron = 0.1
+    L_eff_sig = L_eff_sig_micron*1E-6
+    D_eff_sig = (L_eff_sig)**2/(travel_time) #L_eff = 0.1 Micron
 
     figure1, axis1 = plt.subplots()
-    #axis2 = axis1.twinx()
 
     for material in materials:
         D, dpa = D_eff(hydrogen, material, v_c, n_H, d, max_dpa = 0.2)
         axis1.loglog(d/AU, D)
     axis1.loglog(d/AU, np.full(n_d, D_eff_sig), '--', color='black')
 
-    plt.title('Hydrogen D_eff for n_H: 0.3/cm3 v: 0.2c')
-    plt.legend([material['symbol'] for material in materials] + ['L_eff < 0.1 um'])
+    plt.title(f'Hydrogen D_eff for n_H: {n_H_cm3}/cm3 v: {v_c}c')
+    plt.legend([material['symbol'] for material in materials] + [f'L_eff < {L_eff_sig_micron} um'])
     plt.xlabel('d [AU]')
     plt.ylabel('D_eff [m2/s]')
-    #plt.axis([0.0, d_max, 1e-22, 1e-12])
-    #axis1.set_xlim((-0.1, d_max))
     plt.savefig('D_eff_d.png')
 
     dpa = np.logspace(-9, -1, n_d)
-    T = 50 + 273.15
+    Teq = (1.4 * n_H * m * v**3 / 2. / sigma)**(1./4.)
 
     figure2, axis2 = plt.subplots()
     for material in materials:
-        D = D_eff_dpa_T(hydrogen, material, T, dpa)
+        D = D_eff_dpa_T(hydrogen, material, Teq, dpa)
         axis2.loglog(dpa, D)
     axis2.loglog(dpa, np.full(n_d, D_eff_sig), '--', color='black')
 
-    plt.title('Hydrogen D_eff for T: 50C')
-    plt.legend([material['symbol'] for material in materials] + ['L_eff < 0.1 um'])
-    plt.xlabel('dpa')
+    plt.title(f'Hydrogen D_eff for T_eq: {np.round(Teq) - 273} C')
+    plt.legend([material['symbol'] for material in materials] + [f'L_eff < {L_eff_sig_micron} um'])
+    plt.xlabel('vac/atom')
     plt.ylabel('D_eff [m2/s]')
     plt.savefig('D_eff_dpa.png')
-    axis2.set_xticks([1e-8, 1e-6, 1e-4, 0.005, 1e-2,  1e-1])
     plt.show()
 
 if __name__ == '__main__':
